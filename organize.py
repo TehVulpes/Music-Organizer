@@ -22,7 +22,7 @@ def main(argv):
 
     tree = FileTree(root)
 
-    for leaf in tree.depth_first_iter():
+    for leaf in tree.file_iter():
         print(leaf.value)
 
 

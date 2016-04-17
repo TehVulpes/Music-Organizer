@@ -19,7 +19,8 @@ audio_extensions = (
 path_format = (
     ':albumartist:',
     ':year: - :album: [:FORMAT:]?label|catalogno?" {:label?:?label?"?catalogno?" "":catalogno?:}"',
-    '?discnumber?":discnumber:-":tracknumber: :title:.:format:'
+    '?disctotal!1?"Disc :discnumber:"',
+    ':tracknumber: :title:.:format:'
 )
 
 
@@ -31,6 +32,14 @@ def parse_args(argv):
             raise Exception('"{}" is not a valid path'.format(arg))
         else:
             root = os.path.realpath(arg)
+
+
+def print_layout(layout, depth=0):
+    for key in layout.keys():
+        print('    ' * depth + key)
+
+        if type(layout[key]) == dict:
+            print_layout(layout[key], depth + 1)
 
 
 def main(argv):
@@ -60,14 +69,7 @@ def main(argv):
                     layer[path] = {}
                     layer = layer[path]
 
-    for artist in organized.keys():
-        print(artist)
-
-        for album in organized[artist].keys():
-            print('    ' + album)
-
-            for song in organized[artist][album].keys():
-                print('        ' + song)
+    print_layout(organized)
 
 
 main(sys.argv)

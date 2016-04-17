@@ -148,10 +148,25 @@ def _test_condition(conditional, tags):
     conditional = conditional[1:conditional[1:].find('?') + 1]
 
     for condition in conditional.split('|'):
-        if condition in tags:
-            return True
+        if '!' in condition:
+            if tags[condition[:condition.find('!')]] == condition[condition.rfind('!') + 1:]:
+                continue
+            condition = condition[:condition.find('!')]
+
+        if tags[condition] is None:
+            continue
+
+        return True
 
     return False
+
+
+def pad_tag(tags, totaltag, paddedtag, filename):
+    if tags[totaltag] is None:
+        tags[totaltag] = _request_tag_value(tags, totaltag, filename)
+
+    if len(tags[totaltag]) > 1:
+        tags[paddedtag] = tags[paddedtag].zfill(len(tags[totaltag]))
 
 
 def get_tags(filename):
@@ -163,13 +178,21 @@ def get_tags(filename):
     tags = {}
 
     for alias in _tag_alias:
-        if alias[0] in tags:
+        if alias[0] in tags and tags[alias[0]] is not None:
             continue
 
         for tag in alias[1]:
             if tag in id3:
                 tags[alias[0]] = alias[2](id3[tag])
                 break
+
+        if alias[0] not in tags:
+            tags[alias[0]] = None
+
+    if tags['tracknumber'] is not None:
+        pad_tag(tags, 'tracktotal', 'tracknumber', filename)
+    if tags['discnumber'] is not None:
+        pad_tag(tags, 'disctotal', 'discnumber', filename)
 
     tags['format'] = os.path.splitext(filename)[1][1:].lower()
     tags['FORMAT'] = os.path.splitext(filename)[1][1:].upper()
@@ -193,7 +216,7 @@ def format_string(string_format, tags, filename):
                     if not required:
                         part = part.replace('?', '')
 
-                    if part not in tags:
+                    if tags[part] is None:
                         if not required:
                             string = string.rstrip()
                             continue

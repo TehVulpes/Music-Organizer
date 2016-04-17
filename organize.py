@@ -36,10 +36,12 @@ def parse_args(argv):
 
 def print_layout(layout, depth=0):
     for key in layout.keys():
-        print('    ' * depth + key)
+        if len(key) > 0:
+            print('    ' * depth + key)
 
         if type(layout[key]) == dict:
-            print_layout(layout[key], depth + 1)
+            newdepth = depth if len(key) == 0 else depth + 1
+            print_layout(layout[key], newdepth)
 
 
 def main(argv):

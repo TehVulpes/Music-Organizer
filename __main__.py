@@ -228,7 +228,7 @@ def get_file(filename):
     if filename in special:
         return special[filename]
     else:
-        return open(filename, 'w')
+        return open(filename, 'wb')
 
 
 run_op = write_changes

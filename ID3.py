@@ -160,13 +160,36 @@ def _conditional_split(string_format):
 def _test_condition(conditional, tags):
     conditional = conditional[1:conditional[1:].find('?') + 1]
 
-    for condition in conditional.split('|'):
-        if '!' in condition:
-            if tags[condition[:condition.find('!')]] == condition[condition.rfind('!') + 1:]:
-                continue
-            condition = condition[:condition.find('!')]
+    tests = {
+        '!=': lambda tag, value: tag != value,
+        '==': lambda tag, value: tag == value,
+        '<>': lambda tag, value: tag != value,
+        '>': lambda tag, value: tag > value,
+        '>=': lambda tag, value: tag >= value,
+        '<': lambda tag, value: tag < value,
+        '<=': lambda tag, value: tag <= value
+    }
 
-        if tags[condition] is None:
+    for condition in conditional.split('|'):
+        met_requirements = True
+
+        for test in tests.keys():
+            if test in condition:
+                expected_value = condition[condition.rfind(test) + len(test):]
+                condition = condition[:condition.find(test)]
+
+                if tags[condition] is None:
+                    met_requirements = False
+                    break
+
+                if re.fullmatch('\\d*', expected_value) and re.fullmatch('\\d*', tags[condition]):
+                    met_requirements = tests[test](int(tags[condition]), int(expected_value))
+                else:
+                    met_requirements = tests[test](tags[condition], expected_value)
+
+                break
+
+        if not met_requirements:
             continue
 
         return True

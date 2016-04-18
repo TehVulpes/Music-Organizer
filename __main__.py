@@ -7,17 +7,6 @@ from Tree import Tree
 from FileTree import FileTree
 
 root = '.'
-audio_extensions = (
-    'aac', 'm4a', 'm4b', 'm4p', 'm4v', 'm4r', '3gp', 'mp4',
-    'aiff', 'aif', 'aifc',
-    'ape', 'apl',
-    'asf', 'wma', 'wmv',
-    'flac',
-    'mp3',
-    'mp4',
-    'mpc', 'mp+', 'mpp',
-    'ogg', 'ogv', 'oga', 'ogx', 'ogm', 'spx', 'opus',
-)
 path_format = (
     ':albumartist:',
 
@@ -27,10 +16,11 @@ path_format = (
     ':label?:?label?" "' +
     ':catalogno?:}"',
 
-    '?disctotal!1?"Disc :discnumber:"',
+    '?disctotal!=1?"Disc :discnumber:"',
     ':tracknumber: :title:.:format:'
 )
 outfile = sys.stdout
+errfile = sys.stderr
 
 
 def main(argv):
@@ -92,7 +82,9 @@ def parse_args(argv):
     global root
 
     arg_logic = {
-        'o': set_outfile
+        'o': set_outfile,
+        'e': set_errfile,
+        'p': print_mode
     }
 
     i = 1
@@ -123,18 +115,38 @@ def parse_args(argv):
             root = os.path.realpath(arg)
 
 
+def print_mode():
+    global run_op
+
+    run_op = print_layout
+
+
 def set_outfile(filename):
     global outfile
 
+    outfile = get_file(filename)
+
+
+def set_errfile(filename):
+    global errfile
+
+    errfile = get_file(filename)
+
+
+def get_file(filename):
     special = {
         'stdout': sys.stdout,
-        'stderr': sys.stderr
+        'stderr': sys.stderr,
+        'stdin': sys.stdin
     }
 
     if filename in special:
-        outfile = special[filename]
+        return special[filename]
     else:
-        outfile = open(filename, 'w')
+        return open(filename, 'w')
+
+
+run_op = print_layout
 
 
 main(sys.argv)

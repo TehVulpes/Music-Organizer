@@ -8,7 +8,22 @@ class Tree:
         return len(self.children) == 0
 
     def add_child(self, child):
-        self.children += (child,)
+        if isinstance(child, Tree):
+            self.children += (child,)
+        else:
+            self.children += (Tree(child),)
+
+    def has_child(self, value):
+        for child in self.children:
+            if child.value == value:
+                return True
+
+    def get_child(self, value):
+        for child in self.children:
+            if child.value == value:
+                return child
+
+        return None
 
     def depth_first_iter(self):
         yield self

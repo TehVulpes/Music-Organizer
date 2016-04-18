@@ -4,16 +4,22 @@ from Tree import Tree
 
 
 class FileTree(Tree):
-    def __init__(self, root, parent=None, ignore_hidden=True):
+    def __init__(self, root, parent=None, ignore_hidden=True, add_children=False):
         if not os.path.exists(root):
             raise Exception('"{}" does not exist'.format(root))
 
         root = os.path.realpath(root)
         super().__init__(root, parent)
 
-        if os.path.isdir(root):
-            for child in [file for file in os.listdir(root) if not file.startswith('.') or not ignore_hidden]:
-                self.add_child(FileTree(root + '/' + child, parent=self))
+        if add_children and self.is_dir():
+            for child in self.enumerate_children(ignore_hidden):
+                self.add_child(FileTree(root + '/' + child, self, ignore_hidden, add_children))
+
+    def enumerate_children(self, ignore_hidden=True):
+        return [file for file in os.listdir(self.value) if not file.startswith('.') or not ignore_hidden]
+
+    def extension(self):
+        return os.path.splitext(self.value)[1][1:]
 
     def is_dir(self):
         return os.path.isdir(self.value)
@@ -22,6 +28,6 @@ class FileTree(Tree):
         return os.path.isfile(self.value)
 
     def file_iter(self):
-        for child in super().depth_first_iter():
+        for child in self.depth_first_iter():
             if child.is_file():
                 yield child

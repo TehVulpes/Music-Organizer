@@ -10,7 +10,20 @@ album_tags = (
     'year', 'date', 'originalyear', 'originaldate', 'label', 'catalogno', 'upc', 'media', 'albumartist', 'disctotal',
     'discnumber'
 )
+
 album_tag_data = {}
+
+audio_extensions = (
+    'aac', 'm4a', 'm4b', 'm4p', 'm4v', 'm4r', '3gp', 'mp4',
+    'aiff', 'aif', 'aifc',
+    'ape', 'apl',
+    'asf', 'wma', 'wmv',
+    'flac',
+    'mp3',
+    'mp4',
+    'mpc', 'mp+', 'mpp',
+    'ogg', 'ogv', 'oga', 'ogx', 'ogm', 'spx', 'opus',
+)
 
 
 def _format_year(year):

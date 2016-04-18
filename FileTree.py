@@ -19,7 +19,12 @@ class FileTree(Tree):
         return [file for file in os.listdir(self.value) if not file.startswith('.') or not ignore_hidden]
 
     def extension(self):
-        return os.path.splitext(self.value)[1][1:]
+        extension = os.path.splitext(self.value)[1]
+
+        if len(extension) == 0:
+            return None
+        else:
+            return extension[1:]
 
     def is_dir(self):
         return os.path.isdir(self.value)

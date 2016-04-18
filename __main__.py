@@ -1,10 +1,11 @@
 import inspect
 import os
+import stat
 import sys
 
 import ID3
-from Tree import Tree
 from FileTree import FileTree
+from Tree import Tree
 
 root = '.'
 path_format = (
@@ -19,6 +20,9 @@ path_format = (
     '?disctotal!=1?"Disc :discnumber:"',
     ':tracknumber: :title:.:format:'
 )
+keep_formats = (
+    'jpg', 'jpeg', 'jif', 'jfif', 'png', 'bmp', 'tiff', 'gif', 'pdf'
+)
 outfile = sys.stdout
 errfile = sys.stderr
 
@@ -29,13 +33,14 @@ def main(argv):
     tree = FileTree(root, add_children=True)
     organized = get_id3_tree(tree)
 
-    print_layout(organized)
+    run_op(organized)
     outfile.flush()
     outfile.close()
 
 
 def get_id3_tree(file_tree):
-    tree = Tree('output')
+    tree = Tree('../output')
+    rootlength = len(root) + 1
 
     for file in file_tree.file_iter():
         if file.extension() not in ID3.audio_extensions:
@@ -45,7 +50,7 @@ def get_id3_tree(file_tree):
         tags = ID3.get_tags(file.value)
 
         for string_format in path_format:
-            path = ID3.format_string(string_format, tags, file.value)
+            path = cleanup_path(ID3.format_string(string_format, tags, file.value))
 
             if len(path) == 0:
                 continue
@@ -54,13 +59,37 @@ def get_id3_tree(file_tree):
 
             if child is None:
                 if string_format == path_format[-1]:
-                    level.add_child({'src': file.value, 'dst': path, 'tree': file})
+                    level.add_child({
+                        'name': path,
+                        'src': file.value[rootlength:],
+                        'dst': os.path.join(get_directory(level, local=True), path),
+                        'tree': file
+                    })
                 else:
                     level.add_child(path)
 
             level = level.get_child(path)
 
     return tree
+
+
+def cleanup_path(path):
+    replacements = {
+        '\\': '-',
+        '/': '-',
+        ':': '-',
+        '*': '•',
+        '?': 'qt',
+        '"': "'",
+        '<': 'lt',
+        '>': 'gt',
+        '|': '-'
+    }
+
+    for symbol in replacements.keys():
+        path = path.replace(symbol, replacements[symbol])
+
+    return path
 
 
 def print_layout(tree, depth=0):
@@ -74,6 +103,60 @@ def print_layout(tree, depth=0):
             print_layout(child, depth + 1)
 
 
+def write_changes(tree):
+    output('#!/usr/bin/env bash')
+    output('# Setting root to {}'.format(root))
+    output('cd {}'.format(root))
+
+    created = ()
+
+    for item in tree.depth_first_iter():
+        directory = get_directory(item, local=True)
+
+        if not item.is_leaf():
+            if directory not in created and not os.path.isdir(directory):
+                output('\n# Creating directory for "{}"'.format(directory))
+                output('mkdir "{}"'.format(directory))
+                output('echo Migrating to {}'.format(directory))
+
+                created += (directory,)
+        else:
+            output('cp "{}" "{}"'.format(item.value['src'], item.value['dst']))
+
+    output('\n\n# Moving special formats to new location')
+    output('echo "Migrating files with the following extensions: {}"'.format(str(keep_formats)))
+
+    extra_copied = ()
+
+    for item in [item for item in tree.depth_first_iter() if item.is_leaf()]:
+        if item.parent in extra_copied:
+            continue
+
+        extra_copied += (item.parent,)
+
+        src = item.value['tree'].parent.value[len(root) + 1:]
+        dst = get_directory(item, local=True)
+        dst = dst[:dst.rfind('/')]
+
+        for keep_format in keep_formats:
+            keep_wildcard = '"{}/"*".{}"'.format(src, keep_format)
+            output('if ls {} 1> /dev/null 2>&1; then cp {} "{}"; fi'.format(keep_wildcard, keep_wildcard, dst))
+
+    if os.path.isfile(outfile.name):
+        try:
+            os.chmod(outfile.name, os.stat(outfile.name).st_mode | stat.S_IEXEC)
+        except Exception:
+            pass
+
+
+def get_directory(tree, local=False):
+    if tree.parent is None:
+        return str(tree.value) if local else os.path.join(root, str(tree.value))
+    else:
+        postfix = tree.value['name'] if type(tree.value) == dict else str(tree.value)
+        return os.path.join(get_directory(tree.parent, local), postfix)
+
+
 def output(data, postfix='\n'):
     outfile.write(data + postfix)
 
@@ -81,10 +164,27 @@ def output(data, postfix='\n'):
 def parse_args(argv):
     global root
 
+    def print_mode():
+        global run_op
+        run_op = print_layout
+
+    def write_mode():
+        global run_op
+        run_op = write_changes
+
+    def set_outfile(filename):
+        global outfile
+        outfile = get_file(filename)
+
+    def set_errfile(filename):
+        global errfile
+        errfile = get_file(filename)
+
     arg_logic = {
         'o': set_outfile,
         'e': set_errfile,
-        'p': print_mode
+        'p': print_mode,
+        's': write_mode
     }
 
     i = 1
@@ -115,24 +215,6 @@ def parse_args(argv):
             root = os.path.realpath(arg)
 
 
-def print_mode():
-    global run_op
-
-    run_op = print_layout
-
-
-def set_outfile(filename):
-    global outfile
-
-    outfile = get_file(filename)
-
-
-def set_errfile(filename):
-    global errfile
-
-    errfile = get_file(filename)
-
-
 def get_file(filename):
     special = {
         'stdout': sys.stdout,
@@ -146,7 +228,6 @@ def get_file(filename):
         return open(filename, 'w')
 
 
-run_op = print_layout
-
+run_op = write_changes
 
 main(sys.argv)

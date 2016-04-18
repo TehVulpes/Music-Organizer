@@ -11,7 +11,7 @@ class Tree:
         if isinstance(child, Tree):
             self.children += (child,)
         else:
-            self.children += (Tree(child),)
+            self.children += (Tree(child, parent=self),)
 
     def has_child(self, value):
         for child in self.children:
@@ -39,6 +39,11 @@ class Tree:
         for child in dirs:
             for element in child.depth_first_iter():
                 yield element
+
+    def leaf_iter(self):
+        for item in self.depth_first_iter():
+            if item.is_leaf():
+                yield item
 
     def __iadd__(self, other):
         self.add_child(other)

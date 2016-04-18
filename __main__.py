@@ -123,7 +123,7 @@ def write_changes(tree):
     output('echo "This script will organize music from {} into {}"'.format(root, os.path.realpath(root + '/' + dest)))
 
     output('read -r -p "Are you sure you want to run this? [y/N] " response')
-    output('case $response in')
+    output('case $response in', sanitize=False)
     output('    [Yy][Ee][Ss]|[Yy])')
     output('        echo "Organizing music..."')
     output('        ;;')
@@ -185,8 +185,10 @@ def get_directory(tree, local=False):
         return os.path.join(get_directory(tree.parent, local), postfix)
 
 
-def output(data, postfix='\n'):
-    outfile.write((data + postfix).replace('$', '\\$').encode('utf-8'))
+def output(data, postfix='\n', sanitize=True):
+    if sanitize:
+        data = data.replace('$', '\\$')
+    outfile.write((data + postfix).encode('utf-8'))
 
 
 def parse_args(argv):

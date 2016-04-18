@@ -182,7 +182,7 @@ def _test_condition(conditional, tags):
                     met_requirements = False
                     break
 
-                if re.fullmatch('\\d*', expected_value) and re.fullmatch('\\d*', tags[condition]):
+                if re.fullmatch('\\d+', expected_value) and re.fullmatch('\\d+', tags[condition]):
                     met_requirements = tests[test](int(tags[condition]), int(expected_value))
                 else:
                     met_requirements = tests[test](tags[condition], expected_value)

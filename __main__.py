@@ -17,8 +17,7 @@ path_format = (
     ':albumartist:',
 
     ':year: - :album: [:FORMAT:]' +
-    '?label|catalogno|media?" {' +
-    ':media?:?media?" "' +
+    '?label|catalogno?" {' +
     ':label?:?label?" "' +
     ':catalogno?:}"',
 

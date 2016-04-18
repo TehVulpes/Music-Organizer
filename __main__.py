@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import inspect
+import time
 import os
 import stat
 import sys
@@ -11,6 +12,7 @@ from FileTree import FileTree
 from Tree import Tree
 
 root = '.'
+dest = '../output'
 path_format = (
     ':albumartist:',
 
@@ -42,7 +44,7 @@ def main(argv):
 
 
 def get_id3_tree(file_tree):
-    tree = Tree('../output')
+    tree = Tree(dest)
     rootlength = len(root) + 1
 
     for file in file_tree.file_iter():
@@ -108,6 +110,29 @@ def print_layout(tree, depth=0):
 
 def write_changes(tree):
     output('#!/usr/bin/env bash')
+
+    output('# Ensuring user really wants to migrate files')
+    output('echo "This file is an automatic ID3-based Music organizer. It\'s potentially dangerous."')
+    output('echo "It was generated on {} (yyyy-mm-dd) at {} ({})"'.format(
+        time.strftime('%Y-%m-%d'), time.strftime('%I:%M:%S %p'), time.strftime('%H:%M:%S')
+    ))
+    output('echo "The command used to generate it was {}"'.format(
+        ' '.join(sys.argv).replace('"', '').replace('\\', ''))
+    )
+    output('echo ""')
+    output('echo "This script will organize music from {} into {}"'.format(root, os.path.realpath(root + '/' + dest)))
+
+    output('read -r -p "Are you sure you want to run this? [y/N] " response')
+    output('case $response in')
+    output('    [Yy][Ee][Ss]|[Yy])')
+    output('        echo "Organizing music..."')
+    output('        ;;')
+    output('    *)')
+    output('        echo "User didn\'t provide permission; aborting"')
+    output('        exit')
+    output('        ;;')
+    output('esac')
+
     output('# Setting working directory to {}'.format(root))
     output('cd {}'.format(root))
 

@@ -39,7 +39,7 @@ def _get_catalog_no(cat):
         if not _is_upc(cat):
             return string
 
-    return cat[0]
+    return None
 
 
 def _get_upc(cat):
@@ -171,28 +171,30 @@ def _test_condition(conditional, tags):
     }
 
     for condition in conditional.split('|'):
-        met_requirements = True
+        met_requirements = False
+
+        if condition in tags and tags[condition] is not None:
+            return True
 
         for test in tests.keys():
-            if test in condition:
-                expected_value = condition[condition.rfind(test) + len(test):]
-                condition = condition[:condition.find(test)]
+            if test not in condition:
+                continue
 
-                if tags[condition] is None:
-                    met_requirements = False
-                    break
+            expected_value = condition[condition.rfind(test) + len(test):]
+            condition = condition[:condition.find(test)]
 
-                if re.fullmatch('\\d+', expected_value) and re.fullmatch('\\d+', tags[condition]):
-                    met_requirements = tests[test](int(tags[condition]), int(expected_value))
-                else:
-                    met_requirements = tests[test](tags[condition], expected_value)
+            if tags[condition] is None:
+                continue
 
-                break
+            if re.fullmatch('\\d+', expected_value) and re.fullmatch('\\d+', tags[condition]):
+                met_requirements = tests[test](int(tags[condition]), int(expected_value))
+            else:
+                met_requirements = tests[test](tags[condition], expected_value)
 
-        if not met_requirements:
-            continue
+            break
 
-        return True
+        if met_requirements:
+            return True
 
     return False
 

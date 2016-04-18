@@ -108,7 +108,7 @@ def print_layout(tree, depth=0):
 
 def write_changes(tree):
     output('#!/usr/bin/env bash')
-    output('# Setting root to {}'.format(root))
+    output('# Setting working directory to {}'.format(root))
     output('cd {}'.format(root))
 
     created = ()

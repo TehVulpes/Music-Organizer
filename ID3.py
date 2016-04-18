@@ -8,7 +8,7 @@ from mutagen.id3 import ID3NoHeaderError
 
 album_tags = (
     'year', 'date', 'originalyear', 'originaldate', 'label', 'catalogno', 'upc', 'media', 'albumartist', 'disctotal',
-    'discnumber'
+    'tracktotal'
 )
 
 album_tag_data = {}

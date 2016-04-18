@@ -92,7 +92,7 @@ def _request_tag_value(tags, tag, filename):
 
     sys.stdout.write('Enter value for tag "{}" in file "{}": '.format(tag, filename))
     sys.stdout.flush()
-    value = sys.stdin.readline()
+    value = sys.stdin.readline().replace('\n', '')
 
     if tag in album_tags and tags['album'] is not None:
         if tags['album'] not in album_tag_data:

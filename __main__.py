@@ -120,7 +120,7 @@ def write_changes(tree):
             if directory not in created and not os.path.isdir(directory):
                 output('\n# Creating directory for "{}"'.format(directory))
                 output('mkdir "{}"'.format(directory))
-                output('echo Migrating to {}'.format(directory))
+                output('echo Migrating to "{}"'.format(directory))
 
                 created += (directory,)
         else:

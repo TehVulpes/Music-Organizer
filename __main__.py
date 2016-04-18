@@ -134,7 +134,7 @@ def write_changes(tree):
     output('esac')
 
     output('# Setting working directory to {}'.format(root))
-    output('cd {}'.format(root))
+    output('cd "{}"'.format(root))
 
     created = ()
 

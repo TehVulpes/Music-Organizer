@@ -161,7 +161,7 @@ def get_directory(tree, local=False):
 
 
 def output(data, postfix='\n'):
-    outfile.write(data + postfix)
+    outfile.write((data + postfix).encode('utf-8'))
 
 
 def parse_args(argv):

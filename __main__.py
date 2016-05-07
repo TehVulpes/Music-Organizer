@@ -8,6 +8,7 @@ import stat
 import sys
 
 import ID3
+import ID3Formatter
 from FileTree import FileTree
 from Tree import Tree
 
@@ -47,19 +48,19 @@ def get_id3_tree(file_tree):
     rootlength = len(root) + 1
 
     for file in file_tree.file_iter():
-        if file.extension() not in ID3.audio_extensions:
+        if file.get_extension() not in ID3.audio_extensions:
             continue
 
         level = tree
         tags = ID3.get_tags(file.value)
 
         for string_format in path_format:
-            path = cleanup_path(ID3.format_string(string_format, tags, file.value))
+            path = cleanup_path(ID3Formatter.format_string(string_format, tags, file.value))
 
             if len(path) == 0:
                 continue
 
-            child = level.get_child(path)
+            child = level.get_child_tree(path)
 
             if child is None:
                 if string_format == path_format[-1]:
@@ -72,7 +73,7 @@ def get_id3_tree(file_tree):
                 else:
                     level.add_child(path)
 
-            level = level.get_child(path)
+            level = level.get_child_tree(path)
 
     return tree
 
@@ -122,7 +123,7 @@ def write_changes(tree):
     output('echo "This script will organize music from {} into {}"'.format(root, os.path.realpath(root + '/' + dest)))
 
     output('read -r -p "Are you sure you want to run this? [y/N] " response')
-    output('case $response in', sanitize=False)
+    output('case ${response} in', sanitize=False)
     output('    [Yy][Ee][Ss]|[Yy])')
     output('        echo "Organizing music..."')
     output('        ;;')

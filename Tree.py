@@ -8,17 +8,16 @@ class Tree:
         return len(self.children) == 0
 
     def add_child(self, child):
-        if isinstance(child, Tree):
-            self.children += (child,)
-        else:
-            self.children += (Tree(child, parent=self),)
+        self.children += (self.get_tree(child),)
 
     def has_child(self, value):
         for child in self.children:
             if child.value == value:
                 return True
 
-    def get_child(self, value):
+        return False
+
+    def get_child_tree(self, value):
         for child in self.children:
             if child.value == value:
                 return child
@@ -50,3 +49,11 @@ class Tree:
 
     def __str__(self):
         return '{} node: {}'.format(type(self).__name__, self.value.__str__())
+
+    @staticmethod
+    def get_value(item):
+        return item.value if isinstance(item, Tree) else item
+
+    @staticmethod
+    def get_tree(item):
+        return item if isinstance(item, Tree) else Tree(item)

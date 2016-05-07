@@ -18,7 +18,7 @@ class FileTree(Tree):
     def enumerate_children(self, ignore_hidden=True):
         return [file for file in os.listdir(self.value) if not file.startswith('.') or not ignore_hidden]
 
-    def extension(self):
+    def get_extension(self):
         extension = os.path.splitext(self.value)[1]
 
         if len(extension) == 0:

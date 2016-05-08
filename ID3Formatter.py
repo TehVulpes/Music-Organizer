@@ -115,7 +115,7 @@ def _test_condition(conditional, tags):
             expected_value = condition[condition.rfind(test) + len(test):]
             condition = condition[:condition.find(test)]
 
-            if tags[condition] is None:
+            if tags[condition] is None or len(tags[condition]) == 0:
                 continue
 
             if re.fullmatch('\\d+', expected_value) and re.fullmatch('\\d+', tags[condition]):

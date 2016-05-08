@@ -44,6 +44,17 @@ class Tree:
             if item.is_leaf():
                 yield item
 
+    def get_tree_path(self):
+        path = self.value.__str__()
+
+        if self.parent is not None:
+            path = self.parent.get_tree_path() + '/' + path
+
+        return path
+
+    def get_tree(self, item):
+        return item if isinstance(item, Tree) else Tree(item, parent=self)
+
     def __iadd__(self, other):
         self.add_child(other)
 
@@ -53,7 +64,3 @@ class Tree:
     @staticmethod
     def get_value(item):
         return item.value if isinstance(item, Tree) else item
-
-    @staticmethod
-    def get_tree(item):
-        return item if isinstance(item, Tree) else Tree(item)

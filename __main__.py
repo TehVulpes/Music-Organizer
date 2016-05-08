@@ -2,15 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import inspect
-import time
 import os
-import stat
 import sys
 
 import ID3
 import ID3Formatter
 from FileTree import FileTree
 from Tree import Tree
+from BashWriter import BashWriter
 
 root = '.'
 dest = '../output'
@@ -26,7 +25,7 @@ path_format = (
     ':tracknumber: :title:.:format:'
 )
 keep_formats = (
-    'jpg', 'jpeg', 'jif', 'jfif', 'png', 'bmp', 'tiff', 'gif', 'pdf'
+    'jpg', 'jpeg', 'jif', 'jfif', 'png', 'bmp', 'tiff', 'gif', 'pdf', 'txt'
 )
 outfile = sys.stdout
 errfile = sys.stderr
@@ -35,16 +34,17 @@ errfile = sys.stderr
 def main(argv):
     parse_args(argv)
 
-    tree = FileTree(root, add_children=True)
-    organized = get_id3_tree(tree)
+    file_tree = FileTree(root, add_children=True)
+    id3_tree = get_id3_tree(file_tree)
 
-    run_op(organized)
+    run_op(id3_tree)
     outfile.flush()
     outfile.close()
 
 
 def get_id3_tree(file_tree):
-    tree = Tree(dest)
+    tree = Tree(os.path.abspath(dest))
+    tree.value = tree.value[tree.value.rfind(os.path.sep) + 1:]
     rootlength = len(root) + 1
 
     for file in file_tree.file_iter():
@@ -67,7 +67,7 @@ def get_id3_tree(file_tree):
                     level.add_child({
                         'name': path,
                         'src': file.value[rootlength:],
-                        'dst': os.path.join(get_directory(level, local=True), path),
+                        'dst': level.get_tree_path() + os.path.sep + path,
                         'tree': file
                     })
                 else:
@@ -76,6 +76,14 @@ def get_id3_tree(file_tree):
             level = level.get_child_tree(path)
 
     return tree
+
+
+def get_directory(tree, local=False):
+    if tree.parent is None:
+        return str(tree.value) if local else os.path.join(root, str(tree.value))
+    else:
+        postfix = tree.value['name'] if type(tree.value) == dict else str(tree.value)
+        return os.path.join(get_directory(tree.parent, local), postfix)
 
 
 def cleanup_path(path):
@@ -100,99 +108,21 @@ def cleanup_path(path):
 def print_layout(tree, depth=0):
     if type(tree.value) == dict:
         string = '"{}"  ->  "{}"'.format(tree.value['src'], tree.value['dst'])
-        output(' ' * 4 * depth + string)
+        print(' ' * 4 * depth + string)
     else:
-        output(' ' * 4 * depth + tree.value)
+        print(' ' * 4 * depth + tree.value)
 
         for child in tree.children:
             print_layout(child, depth + 1)
 
 
 def write_changes(tree):
-    output('#!/usr/bin/env bash')
-
-    output('# Ensuring user really wants to migrate files')
-    output('echo "This file is an automatic ID3-based Music organizer. It\'s potentially dangerous."')
-    output('echo "It was generated on {} (yyyy-mm-dd) at {} ({})"'.format(
-        time.strftime('%Y-%m-%d'), time.strftime('%I:%M:%S %p'), time.strftime('%H:%M:%S')
-    ))
-    output('echo "The command used to generate it was {}"'.format(
-        ' '.join(sys.argv).replace('"', '').replace('\\', ''))
-    )
-    output('echo ""')
-    output('echo "This script will organize music from {} into {}"'.format(root, os.path.realpath(root + '/' + dest)))
-
-    output('read -r -p "Are you sure you want to run this? [y/N] " response')
-    output('case ${response} in', sanitize=False)
-    output('    [Yy][Ee][Ss]|[Yy])')
-    output('        echo "Organizing music..."')
-    output('        ;;')
-    output('    *)')
-    output('        echo "User didn\'t provide permission; aborting"')
-    output('        exit')
-    output('        ;;')
-    output('esac')
-
-    output('# Setting working directory to {}'.format(root))
-    output('cd "{}"'.format(root))
-
-    created = ()
-
-    for item in tree.depth_first_iter():
-        directory = get_directory(item, local=True)
-
-        if not item.is_leaf():
-            if directory not in created and not os.path.isdir(directory):
-                output('\n# Creating directory for "{}"'.format(directory))
-                output('mkdir "{}"'.format(directory))
-                output('echo Migrating to "{}"'.format(directory))
-
-                created += (directory,)
-        else:
-            output('cp "{}" "{}"'.format(item.value['src'], item.value['dst']))
-
-    output('\n\n# Moving special formats to new location')
-    output('echo "Migrating files with the following extensions: {}"'.format(str(keep_formats)))
-
-    extra_copied = ()
-
-    for item in [item for item in tree.depth_first_iter() if item.is_leaf()]:
-        if item.parent in extra_copied:
-            continue
-
-        extra_copied += (item.parent,)
-
-        src = item.value['tree'].parent.value[len(root) + 1:]
-        dst = get_directory(item, local=True)
-        dst = dst[:dst.rfind('/')]
-
-        for keep_format in keep_formats:
-            keep_wildcard = '"{}/"*".{}"'.format(src, keep_format)
-            output('if ls {} 1> /dev/null 2>&1; then cp {} "{}"; fi'.format(keep_wildcard, keep_wildcard, dst))
-
-    if os.path.isfile(outfile.name):
-        try:
-            os.chmod(outfile.name, os.stat(outfile.name).st_mode | stat.S_IEXEC)
-        except Exception:
-            pass
-
-
-def get_directory(tree, local=False):
-    if tree.parent is None:
-        return str(tree.value) if local else os.path.join(root, str(tree.value))
-    else:
-        postfix = tree.value['name'] if type(tree.value) == dict else str(tree.value)
-        return os.path.join(get_directory(tree.parent, local), postfix)
-
-
-def output(data, postfix='\n', sanitize=True):
-    if sanitize:
-        data = data.replace('$', '\\$')
-    outfile.write((data + postfix).encode('utf-8'))
+    BashWriter(root, dest, keep_formats, outfile, errfile).write_changes(tree)
 
 
 def parse_args(argv):
     global root
+    global dest
 
     def print_mode():
         global run_op
@@ -210,11 +140,16 @@ def parse_args(argv):
         global errfile
         errfile = get_file(filename)
 
+    def set_destination(filename):
+        global dest
+        dest = os.path.abspath(filename)
+
     arg_logic = {
         'o': set_outfile,
         'e': set_errfile,
         'p': print_mode,
-        's': write_mode
+        's': write_mode,
+        'd': set_destination
     }
 
     i = 1

@@ -101,7 +101,7 @@ class BashWriter:
     def make_directories(self, created, full_path):
         path = ''
 
-        for part in full_path.split('/')[1:]:
+        for part in full_path.split('/'):
             if len(part) == 0:
                 continue
 

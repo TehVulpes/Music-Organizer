@@ -136,6 +136,6 @@ def get_tags(filename):
         pad_tag(tags, 'disctotal', 'discnumber', filename)
 
     tags['format'] = os.path.splitext(filename)[1][1:].lower()
-    tags['FORMAT'] = os.path.splitext(filename)[1][1:].upper()
+    tags.update({key.upper(): value.upper() if value is not None else None for key, value in tags.items()})
 
     return tags

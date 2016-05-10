@@ -10,6 +10,16 @@ class Tree:
     def add_child(self, child):
         self.children += (self.get_tree(child),)
 
+    def add_child_tree(self, children):
+        if len(children) == 0:
+            return
+
+        if children[0] not in self:
+            self.add_child(children[0])
+        child = self.get_child_tree(children[0])
+
+        child.add_child_tree(children[1:])
+
     def has_child(self, value):
         for child in self.children:
             if child.value == value:
@@ -57,6 +67,9 @@ class Tree:
 
     def __iadd__(self, other):
         self.add_child(other)
+
+    def __contains__(self, item):
+        return self.value == item or self.has_child(item)
 
     def __str__(self):
         return '{} node: {}'.format(type(self).__name__, self.value.__str__())

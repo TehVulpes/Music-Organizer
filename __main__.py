@@ -7,45 +7,33 @@ import sys
 
 import ID3
 import ID3Formatter
-from FileTree import FileTree
-from Tree import Tree
 from BashWriter import BashWriter
+from FileTree import FileTree
+from RuntimeOptions import RuntimeOptions
+from Tree import Tree
+from ID3Tree import ID3Tree
 
-root = '.'
-dest = '../output'
-path_format = (
-    ':albumartist:',
-
-    ':year: - :album: [:FORMAT:]' +
-    '?label|catalogno?" {' +
-    ':label?:?label?" "' +
-    ':catalogno?:}"',
-
-    '?disctotal!=1?"Disc :discnumber:"',
-    ':tracknumber: :title:.:format:'
-)
-keep_formats = (
-    'jpg', 'jpeg', 'jif', 'jfif', 'png', 'bmp', 'tiff', 'gif', 'pdf', 'txt'
-)
-outfile = sys.stdout
-errfile = sys.stderr
+options = RuntimeOptions()
 
 
 def main(argv):
     parse_args(argv)
 
-    file_tree = FileTree(root, add_children=True)
-    id3_tree = get_id3_tree(file_tree)
+    file_tree = FileTree(options.root, add_children=True)
+    id3_tree = id3_tree = ID3Tree(
+        options.dest, '/'.join(options.path_format),
+        [file.value for file in file_tree.file_iter() if os.path.splitext(file.value)[-1][1:] in ID3.audio_extensions]
+    )
 
     run_op(id3_tree)
-    outfile.flush()
-    outfile.close()
+    options.outfile.flush()
+    options.outfile.close()
 
 
 def get_id3_tree(file_tree):
-    tree = Tree(os.path.abspath(dest))
+    tree = Tree(os.path.abspath(options.dest))
     tree.value = tree.value[tree.value.rfind(os.path.sep) + 1:]
-    rootlength = len(root) + 1
+    rootlength = len(options.root) + 1
 
     for file in file_tree.file_iter():
         if file.get_extension() not in ID3.audio_extensions:
@@ -54,7 +42,7 @@ def get_id3_tree(file_tree):
         level = tree
         tags = ID3.get_tags(file.value)
 
-        for string_format in path_format:
+        for string_format in options.path_format:
             path = cleanup_path(ID3Formatter.format_string(string_format, tags, file.value))
 
             if len(path) == 0:
@@ -63,7 +51,7 @@ def get_id3_tree(file_tree):
             child = level.get_child_tree(path)
 
             if child is None:
-                if string_format == path_format[-1]:
+                if string_format == options.path_format[-1]:
                     level.add_child({
                         'name': path,
                         'src': file.value[rootlength:],
@@ -76,14 +64,6 @@ def get_id3_tree(file_tree):
             level = level.get_child_tree(path)
 
     return tree
-
-
-def get_directory(tree, local=False):
-    if tree.parent is None:
-        return str(tree.value) if local else os.path.join(root, str(tree.value))
-    else:
-        postfix = tree.value['name'] if type(tree.value) == dict else str(tree.value)
-        return os.path.join(get_directory(tree.parent, local), postfix)
 
 
 def cleanup_path(path):
@@ -117,39 +97,35 @@ def print_layout(tree, depth=0):
 
 
 def write_changes(tree):
-    BashWriter(root, dest, keep_formats, outfile, errfile).write_changes(tree)
+    BashWriter(options.root, options.dest, options.keep_formats, options.outfile, options.errfile).write_changes(tree)
 
 
 def parse_args(argv):
-    global root
-    global dest
-
     def print_mode():
-        global run_op
-        run_op = print_layout
+        options.run_op = print_layout
 
     def write_mode():
-        global run_op
-        run_op = write_changes
+        options.run_op = write_changes
 
     def set_outfile(filename):
-        global outfile
-        outfile = get_file(filename)
+        options.outfile = get_file(filename)
 
     def set_errfile(filename):
-        global errfile
-        errfile = get_file(filename)
+        options.errfile = get_file(filename)
 
     def set_destination(filename):
-        global dest
-        dest = os.path.abspath(filename)
+        options.dest = os.path.abspath(filename)
+
+    def set_format(path_format):
+        options.path_format = path_format.split('/')
 
     arg_logic = {
-        'o': set_outfile,
-        'e': set_errfile,
         'p': print_mode,
         's': write_mode,
-        'd': set_destination
+        'o': set_outfile,
+        'e': set_errfile,
+        'd': set_destination,
+        'f': set_format
     }
 
     i = 1
@@ -177,7 +153,7 @@ def parse_args(argv):
             if not os.path.exists(arg):
                 raise Exception('"{}" is not a valid path'.format(arg))
 
-            root = os.path.realpath(arg)
+            options.root = os.path.realpath(arg)
 
 
 def get_file(filename):
@@ -194,5 +170,6 @@ def get_file(filename):
 
 
 run_op = write_changes
+
 
 main(sys.argv)

@@ -3,6 +3,24 @@ import re
 import ID3
 
 
+_replacements = {
+    '$': '\\$',
+    '\\': '-',
+    '/': '-',
+    ':': '-',
+    '*': '•',
+    '?': 'qt',
+    '"': "'",
+    '<': 'lt',
+    '>': 'gt',
+    '|': '-'
+}
+
+
+def format_path(string_format, tags, filename):
+    return format_string(string_format, {key: _clean(value) for key, value in tags.items()}, filename)
+
+
 def format_string(string_format, tags, filename):
     string = ''
 
@@ -94,8 +112,8 @@ def _test_condition(conditional, tags):
 
     tests = {
         '!=': lambda tag, value: tag != value,
-        '==': lambda tag, value: tag == value,
         '<>': lambda tag, value: tag != value,
+        '==': lambda tag, value: tag == value,
         '>': lambda tag, value: tag > value,
         '>=': lambda tag, value: tag >= value,
         '<': lambda tag, value: tag < value,
@@ -129,3 +147,13 @@ def _test_condition(conditional, tags):
             return True
 
     return False
+
+
+def _clean(string):
+    if string is None:
+        return None
+
+    for key in _replacements.keys():
+        string = string.replace(key, _replacements[key])
+
+    return string

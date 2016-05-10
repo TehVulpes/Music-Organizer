@@ -6,12 +6,10 @@ import os
 import sys
 
 import ID3
-import ID3Formatter
 from BashWriter import BashWriter
 from FileTree import FileTree
-from RuntimeOptions import RuntimeOptions
-from Tree import Tree
 from ID3Tree import ID3Tree
+from RuntimeOptions import RuntimeOptions
 
 options = RuntimeOptions()
 
@@ -20,7 +18,7 @@ def main(argv):
     parse_args(argv)
 
     file_tree = FileTree(options.root, add_children=True)
-    id3_tree = id3_tree = ID3Tree(
+    id3_tree = ID3Tree(
         options.dest, '/'.join(options.path_format),
         [file.value for file in file_tree.file_iter() if os.path.splitext(file.value)[-1][1:] in ID3.audio_extensions]
     )
@@ -28,61 +26,6 @@ def main(argv):
     run_op(id3_tree)
     options.outfile.flush()
     options.outfile.close()
-
-
-def get_id3_tree(file_tree):
-    tree = Tree(os.path.abspath(options.dest))
-    tree.value = tree.value[tree.value.rfind(os.path.sep) + 1:]
-    rootlength = len(options.root) + 1
-
-    for file in file_tree.file_iter():
-        if file.get_extension() not in ID3.audio_extensions:
-            continue
-
-        level = tree
-        tags = ID3.get_tags(file.value)
-
-        for string_format in options.path_format:
-            path = cleanup_path(ID3Formatter.format_string(string_format, tags, file.value))
-
-            if len(path) == 0:
-                continue
-
-            child = level.get_child_tree(path)
-
-            if child is None:
-                if string_format == options.path_format[-1]:
-                    level.add_child({
-                        'name': path,
-                        'src': file.value[rootlength:],
-                        'dst': level.get_tree_path() + os.path.sep + path,
-                        'tree': file
-                    })
-                else:
-                    level.add_child(path)
-
-            level = level.get_child_tree(path)
-
-    return tree
-
-
-def cleanup_path(path):
-    replacements = {
-        '\\': '-',
-        '/': '-',
-        ':': '-',
-        '*': '•',
-        '?': 'qt',
-        '"': "'",
-        '<': 'lt',
-        '>': 'gt',
-        '|': '-'
-    }
-
-    for symbol in replacements.keys():
-        path = path.replace(symbol, replacements[symbol])
-
-    return path
 
 
 def print_layout(tree, depth=0):
@@ -170,6 +113,5 @@ def get_file(filename):
 
 
 run_op = write_changes
-
 
 main(sys.argv)

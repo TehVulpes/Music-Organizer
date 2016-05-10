@@ -1,8 +1,8 @@
+import os
+import re
+import stat
 import sys
 import time
-import os
-import stat
-import re
 
 
 class BashWriter:
@@ -48,14 +48,17 @@ class BashWriter:
             '        ;;\n' \
             'esac\n'
         self.output(permission_check)
+        self._write_keep_files()
+        self.output('')
+        self.output('# Setting working directory to {}'.format(self.root.replace('$', '\\$')))
+        self.output('cd "${SOURCE}"')
+
+    def _write_keep_files(self):
         self.output('keep_files() {')
         for file_format in self.keep_formats:
             wildcard = '"${{1}}"/*.{}'.format(file_format)
             self.output('    if ls {} 1> /dev/null 2>&1; then cp {} "${{2}}"; fi'.format(wildcard, wildcard))
         self.output('}')
-        self.output('')
-        self.output('# Setting working directory to {}'.format(self.root.replace('$', '\\$')))
-        self.output('cd "${SOURCE}"')
 
     def _write_body(self, id3_tree):
         created = []

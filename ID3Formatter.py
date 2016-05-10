@@ -2,7 +2,6 @@ import re
 
 import ID3
 
-
 _replacements = {
     '$': '\\$',
     '\\': '-',

@@ -1,7 +1,8 @@
-from Tree import Tree
-import ID3Formatter
-import ID3
 import re
+
+import ID3
+import ID3Formatter
+from Tree import Tree
 
 
 class ID3Tree(Tree):

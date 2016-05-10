@@ -73,7 +73,3 @@ class Tree:
 
     def __str__(self):
         return '{} node: {}'.format(type(self).__name__, self.value.__str__())
-
-    @staticmethod
-    def get_value(item):
-        return item.value if isinstance(item, Tree) else item

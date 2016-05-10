@@ -6,9 +6,10 @@ import time
 
 
 class BashWriter:
-    def __init__(self, root, dest, keep_formats, outfile=sys.stdout, errfile=sys.stderr):
+    def __init__(self, root, dest, command, keep_formats, outfile=sys.stdout, errfile=sys.stderr):
         self.root = root
         self.dest = dest
+        self.command = command
         self.keep_formats = keep_formats
         self.outfile = outfile
         self.errfile = errfile
@@ -23,9 +24,9 @@ class BashWriter:
     def _write_header(self):
         self.output('#!/usr/bin/env bash')
         self.output('')
-        self.output('COMMAND="{}"'.format(' '.join(sys.argv).replace('"', '').replace('\\', '')))
         self.output('SOURCE="{}"'.format(self.root))
         self.output('DESTINATION="{}"'.format(self.dest))
+        self.output('COMMAND="{}"'.format(' '.join(sys.argv).replace('"', '').replace('\\', '')))
         self.output('DATE_CREATED="{}"'.format(time.strftime('%Y-%m-%d')))
         self.output('TIME_12HR="{}"'.format(time.strftime('%I:%M:%S %p')))
         self.output('TIME_24HR="{}"'.format(time.strftime('%H:%M:%S')))
@@ -50,14 +51,22 @@ class BashWriter:
         self.output(permission_check)
         self._write_keep_files()
         self.output('')
-        self.output('# Setting working directory to {}'.format(self.root.replace('$', '\\$')))
-        self.output('cd "${SOURCE}"')
+        self._write_fcn(self.command)
 
     def _write_keep_files(self):
+        self.output('# keep_files moves any extraneous files from the source directory to the destination directory.')
+        self.output('# it\'s currently defined to move ' + str(self.keep_formats))
         self.output('keep_files() {')
         for file_format in self.keep_formats:
             wildcard = '"${{1}}"/*.{}'.format(file_format)
             self.output('    if ls {} 1> /dev/null 2>&1; then cp {} "${{2}}"; fi'.format(wildcard, wildcard))
+        self.output('}')
+
+    def _write_fcn(self, function):
+        self.output('# fcn is the function that\'s actually used to organize music. Double check that this is correct!')
+        self.output('# Note that the default is cp "$1" "$2"')
+        self.output('fcn() {')
+        self.output('    {}'.format(function))
         self.output('}')
 
     def _write_body(self, id3_tree):
@@ -74,7 +83,7 @@ class BashWriter:
             src = self.prepare_path(item.value['src'])
             dst = self.prepare_path(item.value['dst'])
 
-            self.output('cp "{}" "{}"'.format(src, dst))
+            self.output('fcn "{}" "{}"'.format(src, dst))
 
     def output(self, data, postfix='\n'):
         try:

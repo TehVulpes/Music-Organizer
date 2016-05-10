@@ -40,7 +40,9 @@ def print_layout(tree, depth=0):
 
 
 def write_changes(tree):
-    BashWriter(options.root, options.dest, options.keep_formats, options.outfile, options.errfile).write_changes(tree)
+    writer = BashWriter(options.root, options.dest, options.command, options.keep_formats, options.outfile,
+                        options.errfile)
+    writer.write_changes(tree)
 
 
 def parse_args(argv):
@@ -62,13 +64,17 @@ def parse_args(argv):
     def set_format(path_format):
         options.path_format = path_format.split('/')
 
+    def set_command(command):
+        options.command = command
+
     arg_logic = {
         'p': print_mode,
         's': write_mode,
         'o': set_outfile,
         'e': set_errfile,
         'd': set_destination,
-        'f': set_format
+        'f': set_format,
+        'c': set_command
     }
 
     i = 1

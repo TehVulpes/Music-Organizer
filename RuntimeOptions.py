@@ -5,6 +5,7 @@ class RuntimeOptions:
     def __init__(self):
         self.root = '.'
         self.dest = '../output'
+        self.command = 'cp "$1" "$2"'
         self.path_format = (
             ':albumartist:',
 
